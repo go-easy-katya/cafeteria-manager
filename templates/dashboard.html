@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="alert">
+    <strong>Today: {{ today.strftime('%Y-%m-%d') }}</strong><br>
+    Today's menu has {{ today_count }} items.
+</div>
+
+<p>
+    <a href="{{ url_for('edit_today_menu') }}">✏️ Edit Today's Menu</a> |
+    <a href="{{ url_for('print_menu', date=today) }}">🖨️ Print Today's Menu (RU)</a>
+</p>
+<p>
+    <a href="{{ url_for('edit_complex_today') }}">✏️ Edit Today's Complex Lunch</a> |
+    <a href="{{ url_for('print_complex', date=today) }}">🖨️ Print Today's Complex Lunch (RU)</a>
+</p>
+
+<h2>Recent Menus</h2>
+{% if recent_menus %}
+<table>
+    <thead>
+        <tr><th>Date</th><th>Items Count</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+        {% for menu in recent_menus %}
+        <tr>
+            <td>{{ menu.date.strftime('%Y-%m-%d') }}</td>
+            <td>{{ menu.items|length }}</td>
+            <td><a href="{{ url_for('print_menu', date=menu.date) }}">Print (RU)</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No menus created yet.</p>
+{% endif %}
+{% endblock %}

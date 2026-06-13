@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Manage Dishes</h1>
+
+<h2>Add New Dish</h2>
+<form method="POST">
+    <label>Name (RU):</label>
+    <input type="text" name="name_ru" required><br>
+    
+    <label>Name (EN):</label>
+    <input type="text" name="name_en"><br>
+    
+    <label>Category:</label>
+    <select name="category">
+        {% for value, label in categories %}
+        <option value="{{ value }}">{{ label }}</option>
+        {% endfor %}
+    </select><br>
+    
+    <label>Default Price (RUB):</label>
+    <input type="number" name="default_price" required><br>
+    
+    <button type="submit">Add Dish</button>
+</form>
+
+<h2>All Dishes</h2>
+<table>
+    <thead>
+        <tr><th>ID</th><th>RU Name</th><th>EN Name</th><th>Category</th><th>Default Price</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+        {% for dish in dishes %}
+        <tr>
+            <td>{{ dish.id }}</td>
+            <td>{{ dish.name_ru }}</td>
+            <td>{{ dish.name_en or '-' }}</td>
+            <td>{{ dish.category }}</td>
+            <td>{{ dish.default_price }} р</td>
+            <td>
+                <a href="{{ url_for('edit_dish', dish_id=dish.id) }}">Edit</a> |
+                <a href="{{ url_for('price_history', dish_id=dish.id) }}">Price History</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

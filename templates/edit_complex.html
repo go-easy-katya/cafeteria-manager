@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Edit Complex Lunch for {{ complex_menu.date.strftime('%Y-%m-%d') }}</h1>
+
+<form method="POST" id="complexForm">
+    <p>Fixed price: <input type="number" name="fixed_price" value="{{ complex_menu.fixed_price }}" required> ₽</p>
+
+    {% set categories = [
+        ('first', 'Первое (супы)'),
+        ('second', 'Второе (горячее)'),
+        ('garnish', 'Гарнир'),
+        ('salad', 'Салат'),
+        ('drink', 'Компот/Напиток')
+    ] %}
+
+    {% for cat_code, cat_name in categories %}
+    <div class="category-group">
+        <h3>{{ cat_name }}</h3>
+        <div id="{{ cat_code }}-items">
+            {% set items = current_items[cat_code] %}
+            {% if items %}
+                {% for item in items %}
+                <div class="dish-row">
+                    <input type="text" name="{{ cat_code }}_names_ru" value="{{ item.name_ru }}" placeholder="Название (RU)" style="width: 250px;">
+                    <input type="text" name="{{ cat_code }}_names_en" value="{{ item.name_en }}" placeholder="Name (EN)" style="width: 200px;">
+                    <button type="button" onclick="this.parentElement.remove()">Remove</button>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="dish-row">
+                    <input type="text" name="{{ cat_code }}_names_ru" placeholder="Название (RU)" style="width: 250px;">
+                    <input type="text" name="{{ cat_code }}_names_en" placeholder="Name (EN)" style="width: 200px;">
+                    <button type="button" onclick="this.parentElement.remove()">Remove</button>
+                </div>
+            {% endif %}
+        </div>
+        <button type="button" onclick="addItem('{{ cat_code }}')">+ Add option</button>
+    </div>
+    {% endfor %}
+
+    <br>
+    <button type="submit">Save Complex Lunch</button>
+</form>
+
+<script>
+function addItem(category) {
+    const container = document.getElementById(`${category}-items`);
+    const newDiv = document.createElement('div');
+    newDiv.className = 'dish-row';
+    newDiv.innerHTML = `
+        <input type="text" name="${category}_names_ru" placeholder="Название (RU)" style="width: 250px;">
+        <input type="text" name="${category}_names_en" placeholder="Name (EN)" style="width: 200px;">
+        <button type="button" onclick="this.parentElement.remove()">Remove</button>
+    `;
+    container.appendChild(newDiv);
+}
+</script>
+{% endblock %}

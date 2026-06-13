@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Edit Menu for {{ daily_menu.date.strftime('%Y-%m-%d') }}</h1>
+
+<form method="POST">
+    {% for cat_value, cat_label in categories %}
+    {% set category_dishes = dishes|selectattr('category', 'equalto', cat_value)|list %}
+    {% if category_dishes %}
+    <div class="category-group">
+        <h3>{{ cat_label }}</h3>
+        {% for dish in category_dishes %}
+        <div class="dish-row">
+            <label>
+                <input type="checkbox" name="dish_{{ dish.id }}" {% if dish.id in current_items %}checked{% endif %}>
+                {{ dish.name_ru }} {% if dish.name_en %}({{ dish.name_en }}){% endif %}
+            </label>
+            <br>
+            <label style="width: auto;">Price today (RUB):</label>
+            <input type="number" name="price_{{ dish.id }}" value="{{ current_items[dish.id].price_rub if dish.id in current_items else dish.default_price }}" style="width: 100px;">
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endfor %}
+    
+    <button type="submit">Save Today's Menu</button>
+</form>
+{% endblock %}

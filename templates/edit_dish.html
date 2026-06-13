@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Edit Dish</h1>
+
+<form method="POST">
+    <label>Name (RU):</label>
+    <input type="text" name="name_ru" value="{{ dish.name_ru }}" required><br>
+    
+    <label>Name (EN):</label>
+    <input type="text" name="name_en" value="{{ dish.name_en or '' }}"><br>
+    
+    <label>Category:</label>
+    <select name="category">
+        {% for value, label in categories %}
+        <option value="{{ value }}" {% if dish.category == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select><br>
+    
+    <label>Default Price (RUB):</label>
+    <input type="number" name="default_price" value="{{ dish.default_price }}" required><br>
+    
+    <label>
+        <input type="checkbox" name="is_active" {% if dish.is_active %}checked{% endif %}>
+        Active (show in menu selection)
+    </label><br>
+    
+    <button type="submit">Save Changes</button>
+    <a href="{{ url_for('dishes') }}">Cancel</a>
+</form>
+{% endblock %}
