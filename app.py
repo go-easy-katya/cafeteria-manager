@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from sqlalchemy import and_
 import os
 
@@ -122,6 +122,141 @@ class Note(db.Model):
 
     def __repr__(self):
         return f'<Note {self.date} - {self.content[:20]}>'
+
+# ---------- Checklist Models ----------
+class ChecklistItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.String(200), nullable=False)
+    position = db.Column(db.Integer, default=0)
+    is_active = db.Column(db.Boolean, default=True)
+
+class DailyChecklist(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False)
+    checklist_item_id = db.Column(db.Integer, db.ForeignKey('checklist_item.id'), nullable=False)
+    is_completed = db.Column(db.Boolean, default=False)
+    __table_args__ = (db.UniqueConstraint('date', 'checklist_item_id', name='unique_daily_item'),)
+
+#-------------------------------------------------
+# ---------- Daily Checklist Routes ----------
+def get_or_create_daily_checklist(date):
+    """Ensure DailyChecklist records exist for all active items on a given date."""
+    active_items = ChecklistItem.query.filter_by(is_active=True).order_by(ChecklistItem.position).all()
+    for item in active_items:
+        exists = DailyChecklist.query.filter_by(date=date, checklist_item_id=item.id).first()
+        if not exists:
+            daily = DailyChecklist(date=date, checklist_item_id=item.id, is_completed=False)
+            db.session.add(daily)
+    db.session.commit()
+
+@app.route('/checklist', methods=['GET', 'POST'])
+@login_required
+def checklist():
+    # Determine the date to work with
+    if request.method == 'POST':
+        # Date comes from hidden form field
+        date_str = request.form.get('checklist_date')
+    else:
+        # Date comes from query string or default today
+        date_str = request.args.get('date')
+    
+    if not date_str:
+        date_str = date.today().isoformat()
+    
+    try:
+        current_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        current_date = date.today()
+
+    # Ensure records exist for all active items on this date
+    get_or_create_daily_checklist(current_date)
+
+    if request.method == 'POST':
+        # Update ticks for this date
+        for key, value in request.form.items():
+            if key.startswith('item_'):
+                item_id = int(key.split('_')[1])
+                daily = DailyChecklist.query.filter_by(date=current_date, checklist_item_id=item_id).first()
+                if daily:
+                    daily.is_completed = (value == 'on')
+        db.session.commit()
+        # Redirect to the same date (GET request) to avoid resubmission
+        return redirect(url_for('checklist', date=current_date.isoformat()))
+
+    # GET request: fetch data for display
+    active_items = ChecklistItem.query.filter_by(is_active=True).order_by(ChecklistItem.position).all()
+    checklist_data = []
+    for item in active_items:
+        daily = DailyChecklist.query.filter_by(date=current_date, checklist_item_id=item.id).first()
+        checklist_data.append({
+            'item': item,
+            'completed': daily.is_completed if daily else False
+        })
+
+    prev_date = current_date - timedelta(days=1)
+    next_date = current_date + timedelta(days=1)
+
+    return render_template('checklist.html',
+                         current_date=current_date,
+                         checklist_data=checklist_data,
+                         prev_date=prev_date,
+                         next_date=next_date,
+                         is_admin=(current_user.username == ADMIN_USERNAME))
+
+@app.route('/checklist/manage', methods=['GET', 'POST'])
+@login_required
+def manage_checklist():
+    if current_user.username != ADMIN_USERNAME:
+        return "Access denied. Only admin can manage checklist template.", 403
+
+    # Handle add new item
+    if request.method == 'POST' and 'new_text' in request.form:
+        new_text = request.form.get('new_text', '').strip()
+        if new_text:
+            max_pos = db.session.query(db.func.max(ChecklistItem.position)).scalar() or 0
+            item = ChecklistItem(text=new_text, position=max_pos + 1, is_active=True)
+            db.session.add(item)
+            db.session.commit()
+
+    # Handle edit
+    if request.method == 'POST' and 'edit_id' in request.form:
+        edit_id = int(request.form['edit_id'])
+        new_text = request.form.get('edit_text', '').strip()
+        item = ChecklistItem.query.get(edit_id)
+        if item and new_text:
+            item.text = new_text
+            db.session.commit()
+
+    # Handle delete (soft delete)
+    if request.method == 'POST' and 'delete_id' in request.form:
+        delete_id = int(request.form['delete_id'])
+        item = ChecklistItem.query.get(delete_id)
+        if item:
+            item.is_active = False
+            db.session.commit()
+
+    # Handle reorder (move up/down)
+    if request.method == 'POST' and 'move_id' in request.form:
+        move_id = int(request.form['move_id'])
+        direction = request.form.get('direction')  # 'up' or 'down'
+        item = ChecklistItem.query.get(move_id)
+        if item and item.is_active:
+            if direction == 'up':
+                prev_item = ChecklistItem.query.filter(ChecklistItem.position < item.position, ChecklistItem.is_active==True).order_by(ChecklistItem.position.desc()).first()
+                if prev_item:
+                    item.position, prev_item.position = prev_item.position, item.position
+                    db.session.commit()
+            elif direction == 'down':
+                next_item = ChecklistItem.query.filter(ChecklistItem.position > item.position, ChecklistItem.is_active==True).order_by(ChecklistItem.position.asc()).first()
+                if next_item:
+                    item.position, next_item.position = next_item.position, item.position
+                    db.session.commit()
+
+    # Get all active items (ordered) for display
+    items = ChecklistItem.query.filter_by(is_active=True).order_by(ChecklistItem.position).all()
+    return render_template('manage_checklist.html', items=items)
+
+#---------------------------------------
 
 @login_manager.user_loader
 def load_user(user_id):

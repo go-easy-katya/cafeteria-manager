@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-check-square me-2"></i>Daily Checklist</h2>
+    {% if is_admin %}
+    <a href="{{ url_for('manage_checklist') }}" class="btn btn-outline-secondary"><i class="fas fa-cog"></i> Manage template</a>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('checklist') }}" class="row g-3">
+            <div class="col-auto">
+                <label for="date" class="visually-hidden">Date</label>
+                <input type="date" class="form-control" id="date" name="date" value="{{ current_date.isoformat() }}">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">View</button>
+            </div>
+            <div class="col-auto">
+                <a href="{{ url_for('checklist', date=prev_date.isoformat()) }}" class="btn btn-secondary">← Previous day</a>
+            </div>
+            <div class="col-auto">
+                <a href="{{ url_for('checklist', date=next_date.isoformat()) }}" class="btn btn-secondary">Next day →</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<form method="POST">
+     <input type="hidden" name="checklist_date" value="{{ current_date.isoformat() }}">
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            Checklist for {{ current_date.strftime('%A, %B %d, %Y') }}
+        </div>
+        <div class="card-body">
+            {% if checklist_data %}
+                <ul class="list-group">
+                    {% for entry in checklist_data %}
+                        <li class="list-group-item">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="item_{{ entry.item.id }}" id="item_{{ entry.item.id }}" {% if entry.completed %}checked{% endif %}>
+                                <label class="form-check-label" for="item_{{ entry.item.id }}">
+                                    {{ entry.item.text }}
+                                </label>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted">No active checklist items. Admin can add items in Manage template.</p>
+            {% endif %}
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Save changes</button>
+        </div>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-list-ul me-2"></i>Manage Checklist Template</h2>
+    <a href="{{ url_for('checklist') }}" class="btn btn-secondary">← Back to checklist</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">Add new item</div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="input-group">
+                <input type="text" class="form-control" name="new_text" placeholder="Enter checklist item" required>
+                <button type="submit" class="btn btn-primary">Add</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-secondary text-white">Current items</div>
+    <div class="card-body">
+        <ul class="list-group">
+            {% for item in items %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>{{ item.position }}. {{ item.text }}</span>
+                <div>
+                    <form method="POST" style="display: inline-block;" action="{{ url_for('manage_checklist') }}">
+                        <input type="hidden" name="move_id" value="{{ item.id }}">
+                        <input type="hidden" name="direction" value="up">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.first %}disabled{% endif %}><i class="fas fa-arrow-up"></i></button>
+                    </form>
+                    <form method="POST" style="display: inline-block;" action="{{ url_for('manage_checklist') }}">
+                        <input type="hidden" name="move_id" value="{{ item.id }}">
+                        <input type="hidden" name="direction" value="down">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.last %}disabled{% endif %}><i class="fas fa-arrow-down"></i></button>
+                    </form>
+                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editModal{{ item.id }}"><i class="fas fa-edit"></i></button>
+                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ item.id }}"><i class="fas fa-trash"></i></button>
+                </div>
+            </li>
+
+            <!-- Edit Modal -->
+            <div class="modal fade" id="editModal{{ item.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="POST">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Edit item</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" name="edit_id" value="{{ item.id }}">
+                                <input type="text" class="form-control" name="edit_text" value="{{ item.text }}" required>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-primary">Save changes</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Modal -->
+            <div class="modal fade" id="deleteModal{{ item.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="POST">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Delete item</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" name="delete_id" value="{{ item.id }}">
+                                <p>Are you sure you want to delete "<strong>{{ item.text }}</strong>"? This will remove it from all future checklists (past data remains but won't be shown).</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-danger">Yes, delete</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
