@@ -447,7 +447,25 @@ def dashboard():
     today_menu = DailyMenu.query.filter_by(date=today).first()
     today_count = len(today_menu.items) if today_menu else 0
     recent_menus = DailyMenu.query.order_by(DailyMenu.date.desc()).limit(10).all()
-    return render_template('dashboard.html', today=today, today_count=today_count, recent_menus=recent_menus)
+    
+    # Checklist completion for today
+    total_active = ChecklistItem.query.filter_by(is_active=True).count()
+    completed_today = DailyChecklist.query.filter_by(date=today, is_completed=True).count() if total_active > 0 else 0
+    checklist_completion = int((completed_today / total_active) * 100) if total_active > 0 else 0
+    
+    # Low supplies count (insufficient)
+    low_supplies_count = SupplyItem.query.filter_by(is_sufficient=False).count()
+    
+    # Pending manual reminders (not completed)
+    pending_reminders = ManualReminder.query.filter_by(is_completed=False).count()
+    
+    return render_template('dashboard.html', 
+                         today=today, 
+                         today_count=today_count, 
+                         recent_menus=recent_menus,
+                         checklist_completion=checklist_completion,
+                         low_supplies_count=low_supplies_count,
+                         pending_reminders=pending_reminders)
 
 @app.route('/dishes', methods=['GET', 'POST'])
 @login_required
@@ -469,32 +487,6 @@ def dishes():
             db.session.commit()
     all_dishes = Dish.query.order_by(Dish.category, Dish.name_ru).all()
     return render_template('dishes.html', dishes=all_dishes, categories=CATEGORIES)
-
-@app.route('/dishes/<int:dish_id>/edit', methods=['GET', 'POST'])
-@login_required
-def edit_dish(dish_id):
-    dish = Dish.query.get_or_404(dish_id)
-    if request.method == 'POST':
-        dish.name_ru = request.form.get('name_ru')
-        dish.name_en = request.form.get('name_en')
-        dish.category = request.form.get('category')
-        dish.default_price = int(request.form.get('default_price'))
-        dish.is_active = 'is_active' in request.form
-        db.session.commit()
-        return redirect(url_for('dishes'))
-    return render_template('edit_dish.html', dish=dish, categories=CATEGORIES)
-@app.route('/dishes/<int:dish_id>/delete', methods=['POST'])
-@login_required
-def delete_dish(dish_id):
-    dish = Dish.query.get_or_404(dish_id)
-    # Check if dish is used in any menu items
-    used_in_menus = MenuItem.query.filter_by(dish_id=dish_id).first()
-    if used_in_menus:
-        # Instead of deleting, you could mark as inactive, but here we'll warn
-        return "Cannot delete dish because it appears in some menus. You can edit it and set 'Active' to false instead.", 400
-    db.session.delete(dish)
-    db.session.commit()
-    return redirect(url_for('dishes'))
 
 @app.route('/menu/today', methods=['GET', 'POST'])
 @login_required
@@ -1038,7 +1030,30 @@ def delete_reminder(reminder_id):
     db.session.delete(reminder)
     db.session.commit()
     return redirect(url_for('reminders'))
+@app.route('/dishes/<int:dish_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_dish(dish_id):
+    dish = Dish.query.get_or_404(dish_id)
+    if request.method == 'POST':
+        dish.name_ru = request.form.get('name_ru')
+        dish.name_en = request.form.get('name_en')
+        dish.category = request.form.get('category')
+        dish.default_price = int(request.form.get('default_price'))
+        dish.is_active = 'is_active' in request.form
+        db.session.commit()
+        return redirect(url_for('dishes'))
+    return render_template('edit_dish.html', dish=dish, categories=CATEGORIES)
 
+@app.route('/dishes/<int:dish_id>/delete', methods=['POST'])
+@login_required
+def delete_dish(dish_id):
+    dish = Dish.query.get_or_404(dish_id)
+    used_in_menus = MenuItem.query.filter_by(dish_id=dish_id).first()
+    if used_in_menus:
+        return "Cannot delete dish because it appears in some menus. You can edit it and set 'Active' to false instead.", 400
+    db.session.delete(dish)
+    db.session.commit()
+    return redirect(url_for('dishes'))
 
 if __name__ == '__main__':
     app.run(debug=True)

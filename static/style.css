@@ -1,0 +1,197 @@
+/* Banana Leaf Cafeteria - Tropical Theme with Dark/Light Mode */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --primary-orange: #E67E22;
+    --primary-dark: #D35400;
+    --primary-brown: #8B4513;
+    --primary-darkblue: #1E3A5F;
+    --secondary-sand: #FDEBD0;
+    --light-bg: #FFF8F0;
+    --dark-bg: #1a1a2e;
+    --success-green: #27AE60;
+    --danger-red: #E74C3C;
+    --warning-yellow: #F39C12;
+    --info-blue: #3498DB;
+}
+
+/* Light mode (default) */
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(rgba(255, 248, 240, 0.9), rgba(255, 248, 240, 0.9)), 
+                url('https://www.transparenttextures.com/patterns/banana-leaf.png');
+    background-repeat: repeat;
+    background-attachment: fixed;
+    color: #333;
+    transition: background 0.2s, color 0.2s;
+}
+
+/* Navbar */
+.navbar-dark.bg-dark {
+    background: linear-gradient(135deg, var(--primary-darkblue), var(--primary-brown)) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.navbar-brand { font-weight: 700; letter-spacing: 1px; }
+.navbar-brand i { color: var(--primary-orange); }
+.nav-link { font-weight: 500; transition: all 0.2s; }
+.nav-link:hover { color: var(--primary-orange) !important; transform: translateY(-2px); }
+.dropdown-menu { background-color: var(--primary-darkblue); border: none; }
+.dropdown-item { color: white; }
+.dropdown-item:hover { background-color: var(--primary-orange); color: white; }
+
+/* Cards */
+.card {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+    overflow: hidden;
+    background-color: white;
+}
+.card:hover { transform: translateY(-5px); box-shadow: 0 12px 28px rgba(0,0,0,0.12); }
+.card-header {
+    font-weight: 600;
+    border-bottom: none;
+    background: linear-gradient(95deg, var(--primary-orange), var(--primary-dark));
+    color: white;
+}
+.btn-primary { background-color: var(--primary-orange); border-color: var(--primary-dark); }
+.btn-primary:hover { background-color: var(--primary-dark); border-color: var(--primary-brown); }
+.btn-success { background-color: var(--success-green); }
+.btn-danger { background-color: var(--danger-red); }
+.btn-warning { background-color: var(--warning-yellow); color: #333; }
+.btn-outline-secondary { border-color: var(--primary-orange); color: var(--primary-orange); }
+.btn-outline-secondary:hover { background-color: var(--primary-orange); border-color: var(--primary-dark); color: white; }
+
+/* Tables */
+.table {
+    background-color: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.table thead th {
+    background-color: var(--secondary-sand);
+    color: var(--primary-brown);
+    font-weight: 600;
+    border-bottom: 2px solid var(--primary-orange);
+}
+.table-striped tbody tr:nth-of-type(odd) { background-color: rgba(230,126,34,0.05); }
+
+/* Dashboard cards */
+.dashboard-card {
+    background: white;
+    border-radius: 20px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+    transition: all 0.3s;
+}
+.dashboard-card i { font-size: 2.5rem; color: var(--primary-orange); margin-bottom: 1rem; }
+.dashboard-card h3 { font-size: 1.8rem; font-weight: 700; margin: 0; }
+.dashboard-card p { color: #666; margin-top: 0.5rem; }
+.dashboard-card:hover {
+    background-color: var(--primary-orange);
+    color: white;
+    transform: scale(1.02);
+}
+.dashboard-card:hover i, .dashboard-card:hover p { color: white; }
+
+/* Quick actions */
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+.quick-action-btn {
+    background: white;
+    border-radius: 40px;
+    padding: 0.8rem;
+    text-align: center;
+    transition: all 0.2s;
+    border: 1px solid #eee;
+    text-decoration: none;
+    display: block;
+}
+.quick-action-btn i { font-size: 1.5rem; margin-bottom: 0.5rem; display: block; color: var(--primary-orange); }
+.quick-action-btn:hover {
+    background: var(--primary-orange);
+    color: white !important;
+    transform: translateY(-3px);
+}
+.quick-action-btn:hover i { color: white; }
+
+/* Welcome card visibility */
+.card.bg-gradient .card-title,
+.card.bg-gradient .card-text {
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Theme toggle */
+.theme-toggle {
+    cursor: pointer;
+    background: rgba(255,255,255,0.2);
+    border-radius: 30px;
+    padding: 5px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: 0.2s;
+}
+.theme-toggle:hover { background: rgba(255,255,255,0.3); }
+
+/* Dark mode */
+body.dark-mode {
+    background: #1a1a2e;
+    background-image: none;
+    color: #f0f0f0;
+}
+body.dark-mode .card,
+body.dark-mode .table,
+body.dark-mode .dashboard-card {
+    background-color: #2d2d44;
+    color: #eee;
+}
+body.dark-mode .card-header {
+    background: linear-gradient(95deg, #c95c0e, #a04000);
+}
+body.dark-mode .table thead th {
+    background-color: #3a3a55;
+    color: #ffcc88;
+}
+body.dark-mode .quick-action-btn {
+    background-color: #3a3a55;
+    color: #f0f0f0 !important;
+    border: 1px solid #E67E22;
+}
+body.dark-mode .quick-action-btn:hover {
+    background-color: #E67E22;
+    color: #1a1a2e !important;
+}
+body.dark-mode .quick-action-btn i {
+    color: #E67E22;
+}
+body.dark-mode .quick-action-btn:hover i {
+    color: #1a1a2e;
+}
+body.dark-mode .dashboard-card p {
+    color: #ccc;
+}
+body.dark-mode .dashboard-card:hover {
+    background-color: #E67E22;
+}
+body.dark-mode .dashboard-card:hover p {
+    color: #1a1a2e;
+}
+body.dark-mode .btn-outline-secondary {
+    border-color: #E67E22;
+    color: #E67E22;
+}
+body.dark-mode .btn-outline-secondary:hover {
+    background-color: #E67E22;
+    color: #1a1a2e;
+}
+body.dark-mode .text-muted {
+    color: #aaa !important;
+}

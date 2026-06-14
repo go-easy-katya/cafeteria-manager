@@ -1,113 +1,107 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div class="row">
-    <div class="col-md-12">
-        <div class="alert alert-info d-flex justify-content-between align-items-center">
-            <div>
-                <strong>Today: {{ today.strftime('%Y-%m-%d') }}</strong><br>
-                Today's menu has <strong>{{ today_count }}</strong> items.
-            </div>
-            <div>
-                <a href="{{ url_for('print_menu', date=today) }}" class="btn btn-sm btn-outline-secondary" target="_blank">
-                    <i class="fas fa-print"></i> Print Menu (RU)
-                </a>
-                <a href="{{ url_for('print_complex', date=today) }}" class="btn btn-sm btn-outline-secondary ms-2" target="_blank">
-                    <i class="fas fa-print"></i> Print Complex (RU)
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">Quick Actions</div>
+    <div class="col-12">
+        <div class="card bg-gradient text-white" style="background: linear-gradient(135deg, #E67E22, #D35400);">
             <div class="card-body">
-                <!-- Regular menu date picker -->
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Edit Regular Menu for Any Date</label>
-                    <div class="input-group">
-                        <input type="date" id="datePicker" class="form-control">
-                        <button class="btn btn-outline-primary" onclick="goToDate()">
-                            <i class="fas fa-calendar-alt"></i> Go
-                        </button>
-                    </div>
-                    <small class="text-muted">Pick a date to create or edit that day's regular menu.</small>
-                </div>
-                <hr>
-                <!-- Complex lunch date picker -->
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Edit Complex Lunch for Any Date</label>
-                    <div class="input-group">
-                        <input type="date" id="complexDatePicker" class="form-control">
-                        <button class="btn btn-outline-primary" onclick="goToComplexDate()">
-                            <i class="fas fa-calendar-alt"></i> Go
-                        </button>
-                    </div>
-                    <small class="text-muted">Pick a date to create or edit that day's complex lunch.</small>
-                </div>
-                <hr>
-                <a href="{{ url_for('edit_today_menu') }}" class="btn btn-primary me-2">
-                    <i class="fas fa-edit"></i> Edit Today's Menu
-                </a>
-                <a href="{{ url_for('edit_complex_today') }}" class="btn btn-secondary">
-                    <i class="fas fa-edit"></i> Edit Today's Complex Lunch
-                </a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">Recent Menus</div>
-            <div class="card-body">
-                {% if recent_menus %}
-                <ul class="list-group">
-                    {% for menu in recent_menus %}
-                    <li class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <strong>{{ menu.date.strftime('%Y-%m-%d') }}</strong>
-                            <span class="badge bg-primary rounded-pill">{{ menu.items|length }} items</span>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('print_menu', date=menu.date) }}" class="btn btn-sm btn-outline-secondary" target="_blank">
-                                <i class="fas fa-print"></i> Print Main Menu
-                            </a>
-                            <a href="{{ url_for('print_complex', date=menu.date) }}" class="btn btn-sm btn-outline-secondary" target="_blank">
-                                <i class="fas fa-print"></i> Print Complex
-                            </a>
-                        </div>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="text-muted">No menus created yet.</p>
-                {% endif %}
+                <h2 class="card-title">
+                    <i class="fas fa-leaf me-2"></i> Welcome to Banana Leaf Manager
+                </h2>
+                <p class="card-text fs-5">Hello, {{ current_user.username }}! Here's your daily overview.</p>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-function goToDate() {
-    let dateInput = document.getElementById('datePicker');
-    let selectedDate = dateInput.value;
-    if (selectedDate) {
-        window.location.href = '/menu/' + selectedDate + '/edit';
-    } else {
-        alert('Please select a date first.');
-    }
-}
+<!-- Metrics Row -->
+<div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <div class="dashboard-card">
+            <i class="fas fa-utensils"></i>
+            <h3>{{ today_count }}</h3>
+            <p>Menu items today</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="dashboard-card">
+            <i class="fas fa-check-circle"></i>
+            <h3>{% if checklist_completion %}{{ checklist_completion }}%{% else %}0{% endif %}</h3>
+            <p>Checklist done</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="dashboard-card">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>{{ low_supplies_count }}</h3>
+            <p>Low supplies</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="dashboard-card">
+            <i class="fas fa-bell"></i>
+            <h3>{{ pending_reminders }}</h3>
+            <p>Pending reminders</p>
+        </div>
+    </div>
+</div>
 
-function goToComplexDate() {
-    let dateInput = document.getElementById('complexDatePicker');
-    let selectedDate = dateInput.value;
-    if (selectedDate) {
-        window.location.href = '/complex/' + selectedDate + '/edit';
-    } else {
-        alert('Please select a date first.');
-    }
-}
-</script>
+<!-- Quick Actions Grid -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-bolt"></i> Quick Actions
+    </div>
+    <div class="card-body">
+        <div class="quick-actions-grid">
+            <a href="{{ url_for('edit_today_menu') }}" class="quick-action-btn text-decoration-none text-dark">
+                <i class="fas fa-calendar-day"></i> Today's Menu
+            </a>
+            <a href="{{ url_for('edit_complex_today') }}" class="quick-action-btn text-decoration-none text-dark">
+                <i class="fas fa-calendar-week"></i> Complex Lunch
+            </a>
+            <a href="{{ url_for('checklist') }}" class="quick-action-btn text-decoration-none text-dark">
+                <i class="fas fa-check-square"></i> Daily Checklist
+            </a>
+            <a href="{{ url_for('bakery') }}" class="quick-action-btn text-decoration-none text-dark">
+                <i class="fas fa-chart-simple"></i> Bakery Log
+            </a>
+            <a href="{{ url_for('supplies') }}" class="quick-action-btn text-decoration-none text-dark">
+                <i class="fas fa-boxes"></i> Supplies
+            </a>
+            <a href="{{ url_for('reminders') }}" class="quick-action-btn text-decoration-none text-dark">
+                <i class="fas fa-bell"></i> Reminders
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Menus Section -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-history"></i> Recent Menus
+    </div>
+    <div class="card-body">
+        {% if recent_menus %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr><th>Date</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    {% for menu in recent_menus %}
+                    <tr>
+                        <td>{{ menu.date.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <a href="{{ url_for('print_menu', date=menu.date.isoformat()) }}" class="btn btn-sm btn-outline-primary">Print Main</a>
+                            <a href="{{ url_for('print_complex', date=menu.date.isoformat()) }}" class="btn btn-sm btn-outline-secondary">Print Complex</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">No menus found.</p>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}
