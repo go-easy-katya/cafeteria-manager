@@ -24,17 +24,18 @@
                                     <small>{{ note.content[:100] }}{% if note.content|length > 100 %}...{% endif %}</small>
                                 </div>
                                 <a href="{{ url_for('notes_by_date', date_str=date.isoformat()) }}" class="btn btn-sm btn-info">
-                                    <i class="fas fa-eye"></i> View/Edit
+                                    <i class="fas fa-eye"></i> {% if is_admin %}View/Edit{% else %}View{% endif %}
                                 </a>
                             </li>
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <p class="text-muted">No notes yet. Click a date on the calendar to add one.</p>
+                    <p class="text-muted">No notes yet.</p>
                 {% endif %}
             </div>
         </div>
     </div>
+    {% if is_admin %}
     <div class="col-md-4">
         <div class="card">
             <div class="card-header bg-success text-white">
@@ -54,5 +55,6 @@
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock %}

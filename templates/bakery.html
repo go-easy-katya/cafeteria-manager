@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-bread-slice me-2"></i>Булочный учет<br><small>Bakery Inventory</small></h2>
+    {% if is_admin %}
+    <a href="{{ url_for('edit_bakery_prices') }}" class="btn btn-outline-secondary"><i class="fas fa-edit"></i> Edit prices</a>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('bakery') }}" class="row g-3">
+            <div class="col-auto">
+                <label for="date" class="visually-hidden">Date</label>
+                <input type="date" class="form-control" id="date" name="date" value="{{ current_date.isoformat() }}">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">View / Просмотр</button>
+            </div>
+            <div class="col-auto">
+                <a href="{{ url_for('bakery', date=prev_date.isoformat()) }}" class="btn btn-secondary">← Previous day / Пред. день</a>
+            </div>
+            <div class="col-auto">
+                <a href="{{ url_for('bakery', date=next_date.isoformat()) }}" class="btn btn-secondary">Next day / След. день →</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<form method="POST" id="bakeryForm">
+    <input type="hidden" name="date" value="{{ current_date.isoformat() }}">
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            {{ current_date.strftime('%A, %B %d, %Y') }}
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-bordered table-hover" id="bakeryTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Наименование<br><small>Item name</small></th>
+                        <th>Куплено (шт)<br><small>Bought (pcs)</small></th>
+                        <th>Цена покупки<br><small>Buy price (₽)</small></th>
+                        <th>Итого покупка<br><small>Total buy (₽)</small></th>
+                        <th>Продано (шт)<br><small>Sold (pcs)</small></th>
+                        <th>Цена продажи<br><small>Sell price (₽)</small></th>
+                        <th>Итого продажа<br><small>Total sell (₽)</small></th>
+                        <th>Остаток<br><small>Remaining (pcs)</small></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in table_data %}
+                    <tr data-item-id="{{ entry.item.id }}">
+                        <td>{{ entry.item.name }}</td>
+                        <td><input type="number" name="bought_{{ entry.item.id }}" value="{{ entry.pieces_bought }}" class="form-control bought" min="0" step="1" style="width:100px"></td>
+                        <td class="buying-price">{{ entry.item.buying_price }}</td>
+                        <td class="total-buy">{{ entry.total_buy }}</td>
+                        <td><input type="number" name="sold_{{ entry.item.id }}" value="{{ entry.pieces_sold }}" class="form-control sold" min="0" step="1" style="width:100px"></td>
+                        <td class="selling-price">{{ entry.item.selling_price }}</td>
+                        <td class="total-sell">{{ entry.total_sell }}</td>
+                        <td class="pieces-left">{{ entry.pieces_left }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-secondary">
+                    <tr>
+                        <th colspan="3">Итого за день:<br><small>Daily totals</small></th>
+                        <th id="totalBuySum">{{ total_buy_sum }}</th>
+                        <th colspan="2"></th>
+                        <th id="totalSellSum">{{ total_sell_sum }}</th>
+                        <th id="profitLoss" class="{% if profit_loss >= 0 %}text-success{% else %}text-danger{% endif %}">Прибыль/убыток: {{ profit_loss }}<br><small>Profit/Loss: {{ profit_loss }}</small></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Сохранить / Save</button>
+            <a href="{{ url_for('bakery_stats') }}" class="btn btn-info"><i class="fas fa-chart-line"></i> Статистика / Stats</a>
+        </div>
+    </div>
+</form>
+
+<script>
+    const table = document.getElementById('bakeryTable');
+    function updateRow(row) {
+        const bought = parseInt(row.querySelector('.bought').value) || 0;
+        const sold = parseInt(row.querySelector('.sold').value) || 0;
+        const buyPrice = parseInt(row.querySelector('.buying-price').innerText);
+        const sellPrice = parseInt(row.querySelector('.selling-price').innerText);
+        const totalBuy = bought * buyPrice;
+        const totalSell = sold * sellPrice;
+        row.querySelector('.total-buy').innerText = totalBuy;
+        row.querySelector('.total-sell').innerText = totalSell;
+        row.querySelector('.pieces-left').innerText = bought - sold;
+        return { totalBuy, totalSell };
+    }
+    function updateTotals() {
+        let sumBuy = 0, sumSell = 0;
+        document.querySelectorAll('#bakeryTable tbody tr').forEach(row => {
+            const { totalBuy, totalSell } = updateRow(row);
+            sumBuy += totalBuy;
+            sumSell += totalSell;
+        });
+        document.getElementById('totalBuySum').innerText = sumBuy;
+        document.getElementById('totalSellSum').innerText = sumSell;
+        const profit = sumSell - sumBuy;
+        const profitCell = document.getElementById('profitLoss');
+        profitCell.innerHTML = `Прибыль/убыток: ${profit}<br><small>Profit/Loss: ${profit}</small>`;
+        profitCell.className = profit >= 0 ? 'text-success' : 'text-danger';
+        document.querySelectorAll('.pieces-left').forEach(cell => {
+            const val = parseInt(cell.innerText);
+            if (val < 0) cell.style.color = 'red'; else cell.style.color = '';
+        });
+    }
+    document.querySelectorAll('.bought, .sold').forEach(input => {
+        input.addEventListener('input', updateTotals);
+    });
+    updateTotals();
+</script>
+{% endblock %}

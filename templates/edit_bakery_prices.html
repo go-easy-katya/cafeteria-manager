@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h2><i class="fas fa-edit"></i> Редактировать закупочные и продажные цены<br><small>Edit buying and selling prices</small></h2>
+<form method="POST">
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Товар<br><small>Item</small></th>
+                <th>Закупочная цена (руб)<br><small>Buy price (₽)</small></th>
+                <th>Продажная цена (руб)<br><small>Sell price (₽)</small></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.name }}</td>
+                <td><input type="number" name="bp_{{ item.id }}" value="{{ item.buying_price }}" class="form-control" style="width:100px"></td>
+                <td><input type="number" name="sp_{{ item.id }}" value="{{ item.selling_price }}" class="form-control" style="width:100px"></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <button type="submit" class="btn btn-primary">Сохранить изменения / Save changes</button>
+    <a href="{{ url_for('bakery') }}" class="btn btn-secondary">Отмена / Cancel</a>
+</form>
+{% endblock %}

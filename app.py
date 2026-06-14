@@ -138,6 +138,36 @@ class DailyChecklist(db.Model):
     __table_args__ = (db.UniqueConstraint('date', 'checklist_item_id', name='unique_daily_item'),)
 
 #-------------------------------------------------
+# ---------- Bakery Inventory Models ----------
+class BakeryItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    buying_price = db.Column(db.Integer, nullable=False)   # rubles per piece
+    selling_price = db.Column(db.Integer, nullable=False)
+
+class DailyBakeryRecord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False)
+    item_id = db.Column(db.Integer, db.ForeignKey('bakery_item.id'), nullable=False)
+    pieces_bought = db.Column(db.Integer, default=0)
+    pieces_sold = db.Column(db.Integer, default=0)
+    # Snapshots of prices (even though they are constant, good for historical accuracy)
+    buying_price_snapshot = db.Column(db.Integer, nullable=False)
+    selling_price_snapshot = db.Column(db.Integer, nullable=False)
+    __table_args__ = (db.UniqueConstraint('date', 'item_id', name='unique_bakery_date_item'),)
+
+    @property
+    def total_buy(self):
+        return self.pieces_bought * self.buying_price_snapshot
+
+    @property
+    def total_sell(self):
+        return self.pieces_sold * self.selling_price_snapshot
+
+    @property
+    def pieces_left(self):
+        return self.pieces_bought - self.pieces_sold
+
 # ---------- Daily Checklist Routes ----------
 def get_or_create_daily_checklist(date):
     """Ensure DailyChecklist records exist for all active items on a given date."""

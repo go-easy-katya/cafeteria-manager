@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<h2><i class="fas fa-chart-line me-2"></i>Статистика продаж<br><small>Sales Statistics</small></h2>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="POST" class="row g-3">
+            <div class="col-auto">
+                <label>С: <br><small>From:</small></label>
+                <input type="date" name="start_date" value="{{ start_date.isoformat() }}" class="form-control">
+            </div>
+            <div class="col-auto">
+                <label>По: <br><small>To:</small></label>
+                <input type="date" name="end_date" value="{{ end_date.isoformat() }}" class="form-control">
+            </div>
+            <div class="col-auto align-self-end">
+                <button type="submit" class="btn btn-primary">Показать / Show</button>
+            </div>
+            <div class="col-auto align-self-end">
+                <a href="{{ url_for('bakery_export') }}" class="btn btn-success"><i class="fas fa-file-excel"></i> Экспорт CSV / Export CSV</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-secondary text-white">
+        <i class="fas fa-calendar-week"></i> Самый популярный день недели<br><small>Most popular day of the week</small>
+    </div>
+    <div class="card-body">
+        <p><strong>{{ best_day }}</strong></p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <i class="fas fa-chart-simple"></i> Детальная статистика по товарам<br><small>Detailed item statistics</small>
+    </div>
+    <div class="card-body table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Товар<br><small>Item</small></th>
+                    <th>Всего продано (шт)<br><small>Total sold (pcs)</small></th>
+                    <th>Среднее в день<br><small>Daily average</small></th>
+                    <th>Всего выручка<br><small>Total revenue (₽)</small></th>
+                    <th>Прибыль<br><small>Profit (₽)</small></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in stats %}
+                <tr>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.total_sold }}</td>
+                    <td>{{ "%.1f"|format(item.avg_sold_per_day) }}</td>
+                    <td>{{ item.total_sell_sum }}</td>
+                    <td>{{ item.profit }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{{ url_for('bakery') }}" class="btn btn-secondary">← Назад к учету / Back to inventory</a>
+</div>
+{% endblock %}
