@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date, timedelta
 from sqlalchemy import and_
+from flask import make_response
 import os
 
 app = Flask(__name__)
@@ -608,6 +609,247 @@ def edit_menu_by_date(date):
         db.session.commit()
         return redirect(url_for('dashboard'))
     return render_template('edit_menu_by_date.html', daily_menu=daily_menu, dishes=all_dishes, current_items=current_items, categories=CATEGORIES)
+
+# ---------- Bakery Inventory Routes ----------
+@app.route('/bakery', methods=['GET', 'POST'])
+@login_required
+def bakery():
+    if request.method == 'POST':
+        date_str = request.form.get('date')
+    else:
+        date_str = request.args.get('date')
+    if not date_str:
+        date_str = date.today().isoformat()
+    try:
+        current_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        current_date = date.today()
+
+    items = BakeryItem.query.order_by(BakeryItem.id).all()
+
+    if request.method == 'POST':
+        for item in items:
+            bought_key = f'bought_{item.id}'
+            sold_key = f'sold_{item.id}'
+            pieces_bought = int(request.form.get(bought_key, 0))
+            pieces_sold = int(request.form.get(sold_key, 0))
+            record = DailyBakeryRecord.query.filter_by(date=current_date, item_id=item.id).first()
+            if record:
+                record.pieces_bought = pieces_bought
+                record.pieces_sold = pieces_sold
+            else:
+                record = DailyBakeryRecord(
+                    date=current_date,
+                    item_id=item.id,
+                    pieces_bought=pieces_bought,
+                    pieces_sold=pieces_sold,
+                    buying_price_snapshot=item.buying_price,
+                    selling_price_snapshot=item.selling_price
+                )
+                db.session.add(record)
+        db.session.commit()
+        return redirect(url_for('bakery', date=current_date.isoformat()))
+
+    records = {r.item_id: r for r in DailyBakeryRecord.query.filter_by(date=current_date).all()}
+    table_data = []
+    total_buy_sum = 0
+    total_sell_sum = 0
+    for item in items:
+        record = records.get(item.id)
+        if record:
+            pieces_bought = record.pieces_bought
+            pieces_sold = record.pieces_sold
+            total_buy = pieces_bought * item.buying_price
+            total_sell = pieces_sold * item.selling_price
+        else:
+            pieces_bought = 0
+            pieces_sold = 0
+            total_buy = 0
+            total_sell = 0
+        table_data.append({
+            'item': item,
+            'pieces_bought': pieces_bought,
+            'pieces_sold': pieces_sold,
+            'total_buy': total_buy,
+            'total_sell': total_sell,
+            'pieces_left': pieces_bought - pieces_sold
+        })
+        total_buy_sum += total_buy
+        total_sell_sum += total_sell
+    profit_loss = total_sell_sum - total_buy_sum
+
+    prev_date = current_date - timedelta(days=1)
+    next_date = current_date + timedelta(days=1)
+
+    return render_template('bakery.html',
+                         current_date=current_date,
+                         table_data=table_data,
+                         total_buy_sum=total_buy_sum,
+                         total_sell_sum=total_sell_sum,
+                         profit_loss=profit_loss,
+                         prev_date=prev_date,
+                         next_date=next_date,
+                         is_admin=(current_user.username == ADMIN_USERNAME))
+
+@app.route('/bakery/stats', methods=['GET', 'POST'])
+@login_required
+def bakery_stats():
+    end_date = date.today()
+    start_date = end_date - timedelta(days=30)
+    if request.method == 'POST':
+        start_date_str = request.form.get('start_date')
+        end_date_str = request.form.get('end_date')
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        except:
+            pass
+
+    records = DailyBakeryRecord.query.filter(DailyBakeryRecord.date >= start_date,
+                                              DailyBakeryRecord.date <= end_date).all()
+    items = BakeryItem.query.order_by(BakeryItem.id).all()
+    stats = {}
+    for item in items:
+        stats[item.id] = {
+            'name': item.name,
+            'total_bought': 0,
+            'total_sold': 0,
+            'total_buy_sum': 0,
+            'total_sell_sum': 0,
+            'days_recorded': 0
+        }
+    for rec in records:
+        s = stats[rec.item_id]
+        s['total_bought'] += rec.pieces_bought
+        s['total_sold'] += rec.pieces_sold
+        s['total_buy_sum'] += rec.total_buy
+        s['total_sell_sum'] += rec.total_sell
+        s['days_recorded'] += 1
+
+    for item_id, s in stats.items():
+        s['avg_sold_per_day'] = s['total_sold'] / s['days_recorded'] if s['days_recorded'] > 0 else 0
+        s['profit'] = s['total_sell_sum'] - s['total_buy_sum']
+    sorted_stats = sorted(stats.values(), key=lambda x: x['total_sold'], reverse=True)
+
+    weekday_sales = {i: {'total_sold': 0, 'count': 0} for i in range(7)}
+    for rec in records:
+        dow = rec.date.weekday()
+        weekday_sales[dow]['total_sold'] += rec.pieces_sold
+        weekday_sales[dow]['count'] += 1
+    best_day_info = None
+    best_avg = -1
+    for dow, data in weekday_sales.items():
+        if data['count'] > 0:
+            avg = data['total_sold'] / data['count']
+            if avg > best_avg:
+                best_avg = avg
+                best_day_info = (dow, avg)
+    days_ru = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+    best_day_text = f"{days_ru[best_day_info[0]]} (среднее {best_day_info[1]:.1f} шт.)" if best_day_info else "Нет данных"
+
+    return render_template('bakery_stats.html',
+                         start_date=start_date,
+                         end_date=end_date,
+                         stats=sorted_stats,
+                         best_day=best_day_text,
+                         total_days=(end_date - start_date).days + 1)
+
+@app.route('/bakery/export')
+@login_required
+def bakery_export():
+    import csv
+    from io import StringIO
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Дата', 'Товар', 'Куплено (шт)', 'Цена покупки', 'Продано (шт)', 'Цена продажи', 'Итого покупка', 'Итого продажа', 'Остаток'])
+    records = DailyBakeryRecord.query.order_by(DailyBakeryRecord.date, DailyBakeryRecord.item_id).all()
+    for rec in records:
+        item = BakeryItem.query.get(rec.item_id)
+        writer.writerow([
+            rec.date.isoformat(),
+            item.name,
+            rec.pieces_bought,
+            rec.buying_price_snapshot,
+            rec.pieces_sold,
+            rec.selling_price_snapshot,
+            rec.total_buy,
+            rec.total_sell,
+            rec.pieces_left
+        ])
+    output_bytes = output.getvalue().encode('utf-8-sig')
+    response = make_response(output_bytes)
+    response.headers['Content-Disposition'] = 'attachment; filename=bakery_export.csv'
+    response.headers['Content-type'] = 'text/csv; charset=utf-8'
+    return response
+
+@app.route('/bakery/edit_prices', methods=['GET', 'POST'])
+@login_required
+def edit_bakery_prices():
+    if current_user.username != ADMIN_USERNAME:
+        return "Access denied. Only admin can edit master prices.", 403
+    items = BakeryItem.query.order_by(BakeryItem.id).all()
+    if request.method == 'POST':
+        for item in items:
+            new_bp = request.form.get(f'bp_{item.id}')
+            new_sp = request.form.get(f'sp_{item.id}')
+            if new_bp and new_sp:
+                item.buying_price = int(new_bp)
+                item.selling_price = int(new_sp)
+        db.session.commit()
+        return redirect(url_for('edit_bakery_prices'))
+    return render_template('edit_bakery_prices.html', items=items)
+
+@app.route('/bakery/export_day')
+@login_required
+def export_bakery_day():
+    date_str = request.args.get('date')
+    if not date_str:
+        date_str = date.today().isoformat()
+    try:
+        export_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        export_date = date.today()
+
+    records = DailyBakeryRecord.query.filter_by(date=export_date).all()
+    items = {item.id: item for item in BakeryItem.query.all()}
+    
+    import csv
+    from io import StringIO
+    output = StringIO()
+    # Use utf-8-sig to add BOM for Excel compatibility
+    writer = csv.writer(output)
+    writer.writerow(['Товар', 'Куплено (шт)', 'Цена покупки', 'Итого покупка', 'Продано (шт)', 'Цена продажи', 'Итого продажа', 'Остаток'])
+    
+    total_buy_sum = 0
+    total_sell_sum = 0
+    for rec in records:
+        item = items.get(rec.item_id)
+        if item:
+            total_buy = rec.pieces_bought * rec.buying_price_snapshot
+            total_sell = rec.pieces_sold * rec.selling_price_snapshot
+            writer.writerow([
+                item.name,
+                rec.pieces_bought,
+                rec.buying_price_snapshot,
+                total_buy,
+                rec.pieces_sold,
+                rec.selling_price_snapshot,
+                total_sell,
+                rec.pieces_bought - rec.pieces_sold
+            ])
+            total_buy_sum += total_buy
+            total_sell_sum += total_sell
+    writer.writerow([])
+    writer.writerow(['ИТОГО', '', '', total_buy_sum, '', '', total_sell_sum, ''])
+    writer.writerow(['ПРИБЫЛЬ/УБЫТОК', '', '', '', '', '', '', total_sell_sum - total_buy_sum])
+    
+    # Convert to bytes with UTF-8 BOM
+    output_bytes = output.getvalue().encode('utf-8-sig')
+    
+    response = make_response(output_bytes)
+    response.headers['Content-Disposition'] = f'attachment; filename=bakery_{export_date.isoformat()}.csv'
+    response.headers['Content-type'] = 'text/csv; charset=utf-8'
+    return response
 
 @app.route('/complex/<date>/edit', methods=['GET', 'POST'])
 @login_required

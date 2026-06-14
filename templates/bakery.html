@@ -73,9 +73,10 @@
             </table>
         </div>
         <div class="card-footer">
-            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Сохранить / Save</button>
-            <a href="{{ url_for('bakery_stats') }}" class="btn btn-info"><i class="fas fa-chart-line"></i> Статистика / Stats</a>
-        </div>
+    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Сохранить / Save</button>
+    <a href="{{ url_for('bakery_stats') }}" class="btn btn-info"><i class="fas fa-chart-line"></i> Статистика / Stats</a>
+    <a href="{{ url_for('export_bakery_day', date=current_date.isoformat()) }}" class="btn btn-warning"><i class="fas fa-file-excel"></i> Экспорт дня / Export day CSV</a>
+</div>
     </div>
 </form>
 
