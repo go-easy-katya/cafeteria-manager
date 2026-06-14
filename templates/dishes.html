@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4">Manage Dishes</h1>
+
+<div class="card mb-4">
+    <div class="card-header">
+        Add New Dish
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Name (RU)</label>
+                    <input type="text" class="form-control" name="name_ru" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Name (EN)</label>
+                    <input type="text" class="form-control" name="name_en">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" name="category">
+                        {% for value, label in categories %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Default Price (RUB)</label>
+                    <input type="number" class="form-control" name="default_price" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary mt-3">Add Dish</button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        All Dishes
+    </div>
+    <div class="card-body">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr><th>ID</th><th>RU Name</th><th>EN Name</th><th>Category</th><th>Default Price</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for dish in dishes %}
+                <tr>
+                    <td>{{ dish.id }}</td>
+                    <td>{{ dish.name_ru }}</td>
+                    <td>{{ dish.name_en or '-' }}</td>
+                    <td>{{ dish.category }}</td>
+                    <td>{{ dish.default_price }} р</td>
+                    <td>
+                        <a href="{{ url_for('edit_dish', dish_id=dish.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                        <a href="{{ url_for('price_history', dish_id=dish.id) }}" class="btn btn-sm btn-outline-info">Price History</a>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="deleteDish({{ dish.id }}, '{{ dish.name_ru }}')">Delete</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function deleteDish(dishId, dishName) {
+    if (confirm(`Delete dish "${dishName}"? It will be removed from the database.`)) {
+        fetch(`/dishes/${dishId}/delete`, { method: 'POST' })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    response.text().then(text => alert(text));
+                }
+            })
+            .catch(error => alert('Error deleting dish: ' + error));
+    }
+}
+</script>
+{% endblock %}

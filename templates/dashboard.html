@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+            <div>
+                <strong>Today: {{ today.strftime('%Y-%m-%d') }}</strong><br>
+                Today's menu has <strong>{{ today_count }}</strong> items.
+            </div>
+            <div>
+                <a href="{{ url_for('print_menu', date=today) }}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                    <i class="fas fa-print"></i> Print Menu (RU)
+                </a>
+                <a href="{{ url_for('print_complex', date=today) }}" class="btn btn-sm btn-outline-secondary ms-2" target="_blank">
+                    <i class="fas fa-print"></i> Print Complex (RU)
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Quick Actions</div>
+            <div class="card-body">
+                <!-- Regular menu date picker -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Edit Regular Menu for Any Date</label>
+                    <div class="input-group">
+                        <input type="date" id="datePicker" class="form-control">
+                        <button class="btn btn-outline-primary" onclick="goToDate()">
+                            <i class="fas fa-calendar-alt"></i> Go
+                        </button>
+                    </div>
+                    <small class="text-muted">Pick a date to create or edit that day's regular menu.</small>
+                </div>
+                <hr>
+                <!-- Complex lunch date picker -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Edit Complex Lunch for Any Date</label>
+                    <div class="input-group">
+                        <input type="date" id="complexDatePicker" class="form-control">
+                        <button class="btn btn-outline-primary" onclick="goToComplexDate()">
+                            <i class="fas fa-calendar-alt"></i> Go
+                        </button>
+                    </div>
+                    <small class="text-muted">Pick a date to create or edit that day's complex lunch.</small>
+                </div>
+                <hr>
+                <a href="{{ url_for('edit_today_menu') }}" class="btn btn-primary me-2">
+                    <i class="fas fa-edit"></i> Edit Today's Menu
+                </a>
+                <a href="{{ url_for('edit_complex_today') }}" class="btn btn-secondary">
+                    <i class="fas fa-edit"></i> Edit Today's Complex Lunch
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Recent Menus</div>
+            <div class="card-body">
+                {% if recent_menus %}
+                <ul class="list-group">
+                    {% for menu in recent_menus %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>{{ menu.date.strftime('%Y-%m-%d') }}</strong>
+                            <span class="badge bg-primary rounded-pill">{{ menu.items|length }} items</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('print_menu', date=menu.date) }}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                <i class="fas fa-print"></i> Print Main Menu
+                            </a>
+                            <a href="{{ url_for('print_complex', date=menu.date) }}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                <i class="fas fa-print"></i> Print Complex
+                            </a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted">No menus created yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function goToDate() {
+    let dateInput = document.getElementById('datePicker');
+    let selectedDate = dateInput.value;
+    if (selectedDate) {
+        window.location.href = '/menu/' + selectedDate + '/edit';
+    } else {
+        alert('Please select a date first.');
+    }
+}
+
+function goToComplexDate() {
+    let dateInput = document.getElementById('complexDatePicker');
+    let selectedDate = dateInput.value;
+    if (selectedDate) {
+        window.location.href = '/complex/' + selectedDate + '/edit';
+    } else {
+        alert('Please select a date first.');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Statistics</h1>
+
+<h2>Dish Frequency (how many menus each dish appears in)</h2>
+{% if dish_counts %}
+<table>
+    <thead>
+        <tr><th>Dish (RU)</th><th>Dish (EN)</th><th>Appeared in Menus</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+        {% for dish_id, name_ru, name_en, count in dish_counts %}
+        <tr>
+            <td>{{ name_ru }}</td>
+            <td>{{ name_en or '-' }}</td>
+            <td>{{ count }}</td>
+            <td><a href="{{ url_for('price_history', dish_id=dish_id) }}">Price History</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No dishes or menus yet.</p>
+{% endif %}
+{% endblock %}

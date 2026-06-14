@@ -1,0 +1,65 @@
+/* Custom overrides + restaurant style */
+body {
+    background-color: #fef9f0;  /* warm cream */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.navbar-brand {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.card {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transition: transform 0.1s ease;
+}
+
+.card-header {
+    background-color: #fff5e6;
+    border-bottom: 2px solid #ffd966;
+    font-weight: 600;
+    border-radius: 16px 16px 0 0 !important;
+}
+
+.btn-primary {
+    background-color: #c17b4b;
+    border-color: #b06a3c;
+}
+.btn-primary:hover {
+    background-color: #a55d32;
+    border-color: #944e26;
+}
+
+.table {
+    background-color: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+th {
+    background-color: #f8f3e8;
+    font-weight: 600;
+}
+
+.nav-link i {
+    margin-right: 6px;
+}
+
+/* Keep printed menus completely untouched */
+@media print {
+    body {
+        background-color: white;
+        margin: 0;
+        padding: 0;
+    }
+    .navbar, .no-print, .btn, .card-header, .alert-info {
+        display: none !important;
+    }
+    .card {
+        box-shadow: none;
+        border: none;
+    }
+}

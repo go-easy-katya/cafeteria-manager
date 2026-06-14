@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Price History: {{ dish.name_ru }} {% if dish.name_en %}({{ dish.name_en }}){% endif %}</h1>
+
+{% if history %}
+<table>
+    <thead>
+        <tr><th>Date</th><th>Price (RUB)</th><th>Menu Link</th></tr>
+    </thead>
+    <tbody>
+        {% for menu_item, daily_menu in history %}
+        <tr>
+            <td>{{ daily_menu.date.strftime('%Y-%m-%d') }}</td>
+            <td>{{ menu_item.price_rub }} р</td>
+            <td><a href="{{ url_for('print_menu', date=daily_menu.date) }}" target="_blank">View Menu</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>This dish has never been on any menu.</p>
+{% endif %}
+
+<p><a href="{{ url_for('dishes') }}">← Back to Dishes</a></p>
+{% endblock %}
