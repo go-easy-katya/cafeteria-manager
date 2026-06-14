@@ -87,6 +87,19 @@ class ComplexLunchMenu(db.Model):
 
 with app.app_context():
     db.create_all()
+# ---------- Supplies and Reminders Models ----------
+class SupplyItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    is_sufficient = db.Column(db.Boolean, default=True)  # True = sufficient, False = insufficient
+
+class ManualReminder(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, default='')
+    due_date = db.Column(db.Date, nullable=True)
+    is_completed = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 # --- Flask-Login User Setup ---
@@ -936,6 +949,96 @@ def edit_complex_by_date(date):
                          complex_menu=complex_menu,
                          regular_dishes=regular_dishes_by_category,
                          current_items=current_items)
+
+# ---------- Supplies Routes ----------
+@app.route('/supplies', methods=['GET', 'POST'])
+@login_required
+def supplies():
+    if request.method == 'POST':
+        # Toggle supply status
+        supply_id = request.form.get('supply_id')
+        new_status = request.form.get('is_sufficient') == 'True'
+        supply = SupplyItem.query.get(supply_id)
+        if supply:
+            supply.is_sufficient = new_status
+            db.session.commit()
+        return redirect(url_for('supplies'))
+
+    supplies_list = SupplyItem.query.order_by(SupplyItem.name).all()
+    return render_template('supplies.html', supplies=supplies_list)
+
+@app.route('/supplies/add', methods=['POST'])
+@login_required
+def add_supply():
+    name = request.form.get('name', '').strip()
+    if name:
+        new_supply = SupplyItem(name=name, is_sufficient=True)
+        db.session.add(new_supply)
+        db.session.commit()
+    return redirect(url_for('supplies'))
+
+@app.route('/supplies/delete/<int:supply_id>', methods=['POST'])
+@login_required
+def delete_supply(supply_id):
+    supply = SupplyItem.query.get_or_404(supply_id)
+    db.session.delete(supply)
+    db.session.commit()
+    return redirect(url_for('supplies'))
+
+# ---------- Reminders Routes ----------
+@app.route('/reminders', methods=['GET', 'POST'])
+@login_required
+def reminders():
+    if request.method == 'POST':
+        # Add manual reminder
+        title = request.form.get('title', '').strip()
+        description = request.form.get('description', '').strip()
+        due_date_str = request.form.get('due_date')
+        due_date = None
+        if due_date_str:
+            try:
+                due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
+            except:
+                pass
+        if title:
+            reminder = ManualReminder(
+                title=title,
+                description=description,
+                due_date=due_date,
+                is_completed=False
+            )
+            db.session.add(reminder)
+            db.session.commit()
+        return redirect(url_for('reminders'))
+
+    # Get incomplete manual reminders
+    manual_reminders = ManualReminder.query.filter_by(is_completed=False).order_by(ManualReminder.due_date, ManualReminder.created_at).all()
+    # Get supply-based reminders (items with insufficient)
+    insufficient_supplies = SupplyItem.query.filter_by(is_sufficient=False).all()
+    # Get completed reminders (optional, can be shown in a separate list)
+    completed_reminders = ManualReminder.query.filter_by(is_completed=True).order_by(ManualReminder.created_at.desc()).limit(20).all()
+
+    return render_template('reminders.html',
+                         manual_reminders=manual_reminders,
+                         insufficient_supplies=insufficient_supplies,
+                         completed_reminders=completed_reminders)
+
+@app.route('/reminders/complete/<int:reminder_id>', methods=['POST'])
+@login_required
+def complete_reminder(reminder_id):
+    reminder = ManualReminder.query.get_or_404(reminder_id)
+    reminder.is_completed = True
+    db.session.commit()
+    return redirect(url_for('reminders'))
+
+@app.route('/reminders/delete/<int:reminder_id>', methods=['POST'])
+@login_required
+def delete_reminder(reminder_id):
+    reminder = ManualReminder.query.get_or_404(reminder_id)
+    db.session.delete(reminder)
+    db.session.commit()
+    return redirect(url_for('reminders'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)

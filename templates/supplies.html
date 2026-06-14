@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<h2><i class="fas fa-boxes me-2"></i>Supplies Management</h2>
+
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <i class="fas fa-plus-circle"></i> Add new supply
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('add_supply') }}" class="row g-3">
+            <div class="col-auto">
+                <input type="text" name="name" class="form-control" placeholder="Name" required>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Add</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-secondary text-white">
+        <i class="fas fa-list"></i> Current supplies
+    </div>
+    <div class="card-body">
+        <ul class="list-group">
+            {% for supply in supplies %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>{{ supply.name }}</span>
+                <div>
+                    <form method="POST" action="{{ url_for('supplies') }}" style="display: inline-block;">
+                        <input type="hidden" name="supply_id" value="{{ supply.id }}">
+                        <input type="hidden" name="is_sufficient" value="{{ not supply.is_sufficient }}">
+                        <button type="submit" class="btn btn-sm {% if supply.is_sufficient %}btn-success{% else %}btn-danger{% endif %}">
+                            {% if supply.is_sufficient %}Sufficient{% else %}Insufficient{% endif %}
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('delete_supply', supply_id=supply.id) }}" style="display: inline-block;" onsubmit="return confirm('Delete this supply?')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                    </form>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{{ url_for('reminders') }}" class="btn btn-info"><i class="fas fa-bell"></i> Go to reminders</a>
+</div>
+{% endblock %}
