@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h2><i class="fas fa-chart-line me-2"></i>Статистика продаж<br><small>Sales Statistics</small></h2>
+<h2><i class="fas fa-chart-line me-2"></i>Детальная статистика по товарам<br><small>Detailed item statistics</small></h2>
 
 <div class="card mb-4">
     <div class="card-body">
@@ -41,20 +41,24 @@
             <thead>
                 <tr>
                     <th>Товар<br><small>Item</small></th>
-                    <th>Всего продано (шт)<br><small>Total sold (pcs)</small></th>
-                    <th>Среднее в день<br><small>Daily average</small></th>
-                    <th>Всего выручка<br><small>Total revenue (₽)</small></th>
-                    <th>Прибыль<br><small>Profit (₽)</small></th>
+                    <th>Куплено (шт)<br><small>Bought (pcs)</small></th>
+                    <th>Продано (шт)<br><small>Sold (pcs)</small></th>
+                    <th>Среднее в день<br><small>Daily avg sold</small></th>
+                    <th>Затраты (₽)<br><small>Total cost</small></th>
+                    <th>Выручка (₽)<br><small>Total revenue</small></th>
+                    <th>Прибыль (₽)<br><small>Profit</small></th>
                 </tr>
             </thead>
             <tbody>
-                {% for item in stats %}
+                {% for stat in stats %}
                 <tr>
-                    <td>{{ item.name }}</td>
-                    <td>{{ item.total_sold }}</td>
-                    <td>{{ "%.1f"|format(item.avg_sold_per_day) }}</td>
-                    <td>{{ item.total_sell_sum }}</td>
-                    <td>{{ item.profit }}</td>
+                    <td>{{ stat.name }}</td>
+                    <td>{{ stat.total_bought }}</td>
+                    <td>{{ stat.total_sold }}</td>
+                    <td>{{ "%.1f"|format(stat.avg_sold_per_day) }}</td>
+                    <td>{{ stat.total_buy_sum }}</td>
+                    <td>{{ stat.total_sell_sum }}</td>
+                    <td>{{ stat.profit }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
