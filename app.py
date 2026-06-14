@@ -87,6 +87,7 @@ class ComplexLunchMenu(db.Model):
 with app.app_context():
     db.create_all()
 
+
 # --- Flask-Login User Setup ---
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -107,10 +108,26 @@ users_by_name = {}
 admin_user = User(id=1, username=ADMIN_USERNAME, password_hash=generate_password_hash(ADMIN_PASSWORD))
 users_by_id[admin_user.id] = admin_user
 users_by_name[admin_user.username] = admin_user
+WORKER_USERNAME = 'satish'
+WORKER_PASSWORD = 'satish9c2'
+worker_user = User(id=2, username=WORKER_USERNAME, password_hash=generate_password_hash(WORKER_PASSWORD))
+users_by_id[worker_user.id] = worker_user
+users_by_name[worker_user.username] = worker_user
+class Note(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = db.Column(db.String(80), default=ADMIN_USERNAME)
+
+    def __repr__(self):
+        return f'<Note {self.date} - {self.content[:20]}>'
 
 @login_manager.user_loader
 def load_user(user_id):
     return users_by_id.get(int(user_id))
+def is_admin():
+    return current_user.is_authenticated and current_user.username == ADMIN_USERNAME
 
 # Login & Logout routes
 @app.route('/login', methods=['GET', 'POST'])
@@ -132,6 +149,97 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for('login'))
+
+# ---------- Helper: check if admin ----------
+def is_admin():
+    return current_user.is_authenticated and current_user.username == ADMIN_USERNAME
+
+# ---------- Notes routes (admin only) ----------
+@app.route('/notes')
+@login_required
+def notes_list():
+    # Allow both admin and worker to view, but controls will be hidden for worker
+    all_notes = Note.query.order_by(Note.date.desc()).all()
+    notes_by_date = {}
+    for note in all_notes:
+        notes_by_date[note.date] = note
+    return render_template('notes.html', 
+                           notes_by_date=notes_by_date, 
+                           today=date.today(),
+                           is_admin=(current_user.username == ADMIN_USERNAME))
+
+@app.route('/notes/date/<date_str>', methods=['GET', 'POST'])
+@login_required
+def notes_by_date(date_str):
+    try:
+        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return "Invalid date format", 400
+
+    note = Note.query.filter_by(date=target_date).first()
+    is_admin_user = (current_user.username == ADMIN_USERNAME)
+
+    if request.method == 'POST':
+        if not is_admin_user:
+            return "Access denied. Only admin can edit notes.", 403
+        content = request.form.get('content', '').strip()
+        if content:
+            if note:
+                note.content = content
+            else:
+                note = Note(date=target_date, content=content, created_by=current_user.username)
+                db.session.add(note)
+            db.session.commit()
+            return redirect(url_for('notes_by_date', date_str=date_str))
+        else:
+            # if empty content, ignore
+            pass
+
+    # For GET request or after POST redirect, show the note (read-only if worker)
+    return render_template('note_form.html', 
+                           date=target_date, 
+                           note=note,
+                           is_admin=is_admin_user)
+
+
+@app.route('/notes/<int:note_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_note(note_id):
+    if current_user.username != ADMIN_USERNAME:
+        return "Access denied. Only admin can edit notes.", 403
+    note = Note.query.get_or_404(note_id)
+    if request.method == 'POST':
+        content = request.form.get('content', '').strip()
+        if content:
+            note.content = content
+            db.session.commit()
+        return redirect(url_for('notes_by_date', date_str=note.date.isoformat()))
+    return render_template('note_form.html', 
+                           date=note.date, 
+                           note=note,
+                           is_admin=True)
+
+@app.route('/notes/<int:note_id>/delete', methods=['POST'])
+@login_required
+def delete_note(note_id):
+    if current_user.username != ADMIN_USERNAME:
+        return "Access denied. Only admin can delete notes.", 403
+    note = Note.query.get_or_404(note_id)
+    db.session.delete(note)
+    db.session.commit()
+    return redirect(url_for('notes_list'))
+
+@app.route('/notes/search', methods=['GET'])
+@login_required
+def search_notes():
+    query = request.args.get('q', '').strip()
+    if not query:
+        return redirect(url_for('notes_list'))
+    results = Note.query.filter(Note.content.contains(query)).order_by(Note.date.desc()).all()
+    return render_template('notes_search.html', 
+                           results=results, 
+                           query=query,
+                           is_admin=(current_user.username == ADMIN_USERNAME))
 
 # Helper functions
 def get_or_create_today_menu():

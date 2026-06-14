@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-sticky-note me-2"></i>Notes - Calendar View</h2>
+    <form class="d-flex" method="GET" action="{{ url_for('search_notes') }}">
+        <input class="form-control me-2" type="search" name="q" placeholder="Search notes" aria-label="Search">
+        <button class="btn btn-outline-primary" type="submit"><i class="fas fa-search"></i></button>
+    </form>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-calendar-alt me-1"></i> Notes by date
+            </div>
+            <div class="card-body">
+                {% if notes_by_date %}
+                    <ul class="list-group">
+                        {% for date, note in notes_by_date.items() %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ date.strftime('%A, %B %d, %Y') }}</strong><br>
+                                    <small>{{ note.content[:100] }}{% if note.content|length > 100 %}...{% endif %}</small>
+                                </div>
+                                <a href="{{ url_for('notes_by_date', date_str=date.isoformat()) }}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-eye"></i> View/Edit
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted">No notes yet. Click a date on the calendar to add one.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <i class="fas fa-plus-circle"></i> Add note for any date
+            </div>
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('notes_by_date', date_str='') }}" onsubmit="return false;">
+                    <div class="mb-3">
+                        <label for="customDate" class="form-label">Select date</label>
+                        <input type="date" id="customDate" class="form-control" name="date">
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="location.href='/notes/date/' + document.getElementById('customDate').value">Go</button>
+                </form>
+                <hr>
+                <p class="small text-muted">Or pick today:</p>
+                <a href="{{ url_for('notes_by_date', date_str=today.isoformat()) }}" class="btn btn-outline-secondary w-100">Today's note</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

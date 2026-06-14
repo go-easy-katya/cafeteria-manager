@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-search me-2"></i> Search results for "{{ query }}"</h2>
+    <a href="{{ url_for('notes_list') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back to notes</a>
+</div>
+
+{% if results %}
+    <div class="list-group">
+        {% for note in results %}
+            <a href="{{ url_for('notes_by_date', date_str=note.date.isoformat()) }}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ note.date.strftime('%A, %B %d, %Y') }}</h5>
+                    {% if is_admin %}<small>click to edit</small>{% endif %}
+                </div>
+                <p class="mb-1">{{ note.content[:200] }}{% if note.content|length > 200 %}...{% endif %}</p>
+            </a>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">No notes found containing "{{ query }}".</div>
+{% endif %}
+{% endblock %}
